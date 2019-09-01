@@ -1,0 +1,30 @@
+print( "\nHello Vault User")
+print('\nPlease enter your height in feet:')
+
+height = float(input())
+Theight= height*12
+standing_height = (((Theight/2.0)+ 8))
+sitting_height = (((Theight/4.0)+ 9))
+
+print('your height in inches: ', Theight , 'recommended height for standing height: ', standing_height, 'Recommended height for sitting height: ', sitting_height)
+
+def choice():
+    choice =input("\nEnter S,s to stand or R,r to sit \n")
+    if choice == 's':
+        print('You have chose to stand')
+    elif choice == 'r':
+        print('You have chose to sit')
+    else:
+        print('Invalid choice. Please enter S,s to stand or R,r to sit')
+
+def the_option():
+    option=input("\nEnter 1 for recommended height or 2 to press button to lower or raise desk manually\n")
+    if option == '1':
+        print('Moving desk to recommended height')
+    elif option == '2':
+        print('Please press arrow key to lower or raise desk manually until you reach desired height')
+    else:
+        print('Invalid option. Please enter 1 or 2')
+
+choice()
+the_option()
