@@ -101,20 +101,20 @@ def register_user():
     heightft_info = heightft.get()
     heightinch_info = heightinch.get()
 
-    file = open(username_info, "w")
-    file.write(username_info + "\n")
-    file.write(pin_info + "\n")
-    file.write(email_info)
+    #file = open(username_info, "w")
+    #file.write(username_info + "\n")
+    #file.write(pin_info + "\n")
+    #file.write(email_info)
 
     print(heightinch_info)
     print(type(heightft_info))
     print(type(heightinch_info))
 
-    file.close()
+    #file.close()
 
-    # payload = { 'first_name': str(username_info), }
-    # r = requests.post('http://localhost:3003/create', json=payload)
-    # print(r.json)
+    payload = { 'username': str(username_info), 'pin_number': str(pin_info), 'email': str(email_info), 'user_height': int(heightft_info + heightinch_info) }
+    r = requests.post('http://localhost:3003/create', json=payload)
+    print(r.json)
 
     Label(register_screen, text="Registration Success", fg="green", font=("calibri", 11)).pack()
     Button(register_screen, text="Complete Registration", height="2", width="30", command=next).pack()
