@@ -2,8 +2,8 @@ from tkinter import *
 import os
 import requests
 import time
-from pyfingerprint.pyfingerprint import PyFingerprint
-import RPi.GPIO as GPIO
+#from pyfingerprint.pyfingerprint import PyFingerprint
+#import RPi.GPIO as GPIO
 
 # Designing window for registration
 
@@ -116,7 +116,7 @@ def fingerprint():
   
     Button(fingerprint_screen, text="Register Fingerprint", width=10, height=1, command=register_fingerprint).pack()
 
-# enroll user with fingerprint function
+"""# enroll user with fingerprint function
 def register_fingerprint():
     try:
         f = PyFingerprint('/dev/ttyUSB0', 57600, 0xFFFFFFFF, 0x00000000)
@@ -236,7 +236,7 @@ def fingerprint_login():
     except Exception as e:
         print('Operation failed!')
         print('Exception message: ' + str(e))
-        exit(1)
+        exit(1)"""
 
 
 def register_user():
@@ -257,9 +257,9 @@ def register_user():
 
     #file.close()
 
-    payload = { 'username': str(username_info), 'pin_number': str(pin_info), 'email': str(email_info), 'user_height': int(heightft_info + heightinch_info) }
-    r = requests.post('http://localhost:3003/create', json=payload)
-    print(r.json)
+    #payload = { 'username': str(username_info), 'pin_number': str(pin_info), 'email': str(email_info), 'user_height': int(heightft_info + heightinch_info) }
+    #r = requests.post('http://localhost:3003/create', json=payload)
+    #print(r.json)
 
     Label(register_screen, text="Registration Success", fg="green", font=("calibri", 11)).pack()
     Button(register_screen, text="Complete Registration", height="2", width="30", command=next).pack()
@@ -305,11 +305,11 @@ def next():
     print("You have selected to stand" + str(standing_height))
     print("You have selected to sit" + str(sitting_height))
 
-    email_entry.delete(0, END)
-    username_entry.delete(0, END)
-    pin_entry.delete(0, END)
-    heightft_entry.delete(0, END)
-    heightinch_entry.delete(0, END)
+    #email_entry.delete(0, END)
+    #username_entry.delete(0, END)
+    #pin_entry.delete(0, END)
+    #heightft_entry.delete(0, END)
+    #heightinch_entry.delete(0, END)
 
     #Label(Suggestions_screen, text="Here is where Andres stuff goes").pack()
 
@@ -349,7 +349,7 @@ def next():
 
         print(int(timerinfo))
 
-        Button(Timer_screen, text="Complete Registration", height="2", width="18", command=next_3).pack()
+        Button(Timer_screen, text="Complete Registration", height="2", width="18", command=next_4).pack()
 
         Button(Timer_screen, text="Manual", width=6, height=1, command=lambda: manual()).place(relx=0.85, rely=.980, anchor=S)
 
@@ -361,6 +361,18 @@ def next():
     Button(Suggestions_screen, text="Manual", width=6, height=1, command=lambda: manual()).place(relx=0.85, rely=.980, anchor=S)
 
 
+
+def next_4():
+    payload = { 'username': str(username.get()), 'pin_number': str(pin.get()), 'email': str(email.get()), 'user_height': int(heightft.get() + heightinch.get()), 'mmt': str(timer.get()) }
+    r = requests.post('http://localhost:3003/create', json=payload)
+    print(r.json)
+
+    email_entry.delete(0, END)
+    username_entry.delete(0, END)
+    pin_entry.delete(0, END)
+    heightft_entry.delete(0, END)
+    heightinch_entry.delete(0, END)
+    timer_entry.delete(0,END)
 
 def next_3():
     minutes = int(timer.get())
