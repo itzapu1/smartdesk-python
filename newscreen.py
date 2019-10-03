@@ -374,6 +374,12 @@ def next_4():
     heightinch_entry.delete(0, END)
     timer_entry.delete(0,END)
 
+    Button(Suggestions_screen, text="Manual", width=6, height=1, command=lambda: manual()).place(relx=0.85, rely=.980, anchor=S)
+
+
+
+
+
 def next_3():
     minutes = int(timer.get())
     seconds = minutes*60
