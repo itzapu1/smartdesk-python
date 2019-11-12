@@ -409,6 +409,8 @@ def timer():
     for i in range(seconds):
         print(str(seconds - i) + " seconds remain")
         time.sleep(1)
+        Label(Loggin_screen, text=seconds).pack()
+
 
     print("Time's up! Please Stand")
 
