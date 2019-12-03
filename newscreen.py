@@ -7,11 +7,10 @@ from threading import Thread
 #from requests.auth import HTTPBasicAuth
 #from getpass import getpass
 #import RPi.GPIO as GPIO
-#from pyfingerprint.pyfingerprint import PyFingerprint
-
+#from pyfingerprint import PyFingerprint
+import hashlib
 
 # Designing window for registration
-
 
 
 class Stack():
@@ -86,7 +85,7 @@ def register():
     heightinch_entry = Entry(register_screen, textvariable=heightinch)
     heightinch_entry.pack()
 
-    register_screen.attributes(-'fullscreen', True)
+    #register_screen.attributes('-fullscreen', True)
     Label(register_screen, text="").pack()
     Button(register_screen, text="Register", width=10, height=1, command=register_user).pack()
 
@@ -209,7 +208,7 @@ def register_fingerprint():
 
         f.loadTemplate(positionNumber, 0x01)
 
-        characteristics = str(f.downloadCharacteristics(0x01).encode('utf-8'))
+        characteristics = str(f.downloadCharacteristics(0x01)).encode('utf-8')
 
         global fingerprint
         fingerprint = hashlib.sha256(characteristics).hexdigest()
@@ -277,7 +276,25 @@ def login_fingerprint():
         characterics = str(f.downloadCharacteristics(0x01)).encode('utf-8')
 
         ## Hashes characteristics of template
-        print('SHA-2 hash of template: ' + hashlib.sha256(characterics).hexdigest())
+        fplogin = hashlib.sha256(characterics).hexdigest()
+        print('SHA-2 hash of template: ' + fplogin)
+
+        global user_data
+        try:    
+            payload3 = {'fingerprint': str(fplogin)}
+            r = requests.post('https://tranquil-wildwood-84911.herokuapp.com/login_fp', json=payload3)
+            print(r.json)
+            user_data = r.json()
+            print(r.status_code)
+            print(r.text)
+            print(user_data['user_height'])
+            login_sucess()
+        except:
+            user_not_found()
+
+
+
+
 
     except Exception as e:
         print('Operation failed!')
@@ -409,7 +426,8 @@ def timer():
     for i in range(seconds):
         print(str(seconds - i) + " seconds remain")
         time.sleep(1)
-        Label(Loggin_screen, text=seconds).pack()
+
+        Label(Loggin_screen, text=currentTime).pack()
 
 
     print("Time's up! Please Stand")
@@ -421,19 +439,23 @@ def timer():
 # Implementing event on login button
 
 def login_verify():
+    
     username1 = username_verify.get()
     password1 = password_verify.get()
 
-    payload1 = { 'username': str(username1), 'pin_number': str(password1) }
-    r = requests.post('https://tranquil-wildwood-84911.herokuapp.com/login', json=payload1)
-
     global user_data
-    user_data = r.json()
 
-    print(r.status_code)
-    print(r.text)
-    print(user_data['user_height'])
-    login_sucess()
+
+    try:
+        payload1 = { 'username': str(username1), 'pin_number': str(password1) }
+        r = requests.post('https://tranquil-wildwood-84911.herokuapp.com/login', json=payload1)
+        user_data = r.json()
+        print(r.status_code)
+        print(r.text)
+        print(user_data['user_height'])
+        login_sucess()
+    except:
+        user_not_found()
             
 # Designing popup for login success
 
@@ -441,7 +463,7 @@ def login_sucess():
     global login_success_screen
     login_success_screen = Toplevel(login_screen)
     login_success_screen.title("Success")
-    login_success_screen.geometry("150x100")
+    login_success_screen.geometry("200x100")
     Label(login_success_screen, text="Login Success for user " + username_verify.get()).pack()
     username_login_entry.delete(0, END)
     password_login_entry.delete(0, END)
@@ -483,11 +505,15 @@ def delete_login_success():
     Loggin_screen.geometry("350x350")
     Label(Loggin_screen, text="Here are our suggestions").pack()
     Label(Loggin_screen, text="").pack()
+    #Loggin_screen.attributes('-fullscreen', True)
+
     s = Stack()
     s.push(0)
 
+
     t1 = Thread(target = timer, daemon = True)
-    
+
+    #GPIO.cleanup()
 
     #Label(Loggin_screen, text="Here is where Andres' stuff goes").pack()
     #Label(Loggin_screen, text="").pack()
@@ -497,31 +523,12 @@ def delete_login_success():
         currentHeight = s.pop()
         desk_moving = sitting_height *25.4/10
         print(desk_moving)
-        coag_desk = desk_moving/4
+        coag_desk = desk_moving/6
         if currentHeight < coag_desk:
             moveToSitting = coag_desk - currentHeight
             print(moveToSitting)
-            """GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
-            GPIO.setup(18,GPIO.OUT)
-            GPIO.setup(23,GPIO.OUT)
-            GPIO.setup(24,GPIO.OUT)
-            GPIO.setup(25,GPIO.OUT)
-
-            GPIO.output(18,GPIO.HIGH)
-            GPIO.output(23,GPIO.LOW)
-            GPIO.output(24,GPIO.LOW)
-            GPIO.output(25,GPIO.HIGH)"""
-
-            #time.sleep(moveToSitting)
-            #GPIO.cleanup()
-            s.push(coag_desk)
-            print(s.get_stack())
-        elif currentHeight > coag_desk:
-            moveToSitting = currentHeight - coag_desk
-            print(moveToSitting)
-
-            """GPIO.setmode(GPIO.BCM)
+            #needs to move up
+            GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
             GPIO.setup(18,GPIO.OUT)
             GPIO.setup(23,GPIO.OUT)
@@ -531,10 +538,30 @@ def delete_login_success():
             GPIO.output(18,GPIO.LOW)
             GPIO.output(23,GPIO.HIGH)
             GPIO.output(24,GPIO.HIGH)
-            GPIO.output(25,GPIO.LOW)"""
+            GPIO.output(25,GPIO.LOW)
 
-            #time.sleep(moveToSitting)
-            #GPIO.cleanup()
+            time.sleep(moveToSitting)
+            GPIO.cleanup()
+            s.push(coag_desk)
+            print(s.get_stack())
+        elif currentHeight > coag_desk:
+            moveToSitting = currentHeight - coag_desk
+            print(moveToSitting)
+            #move down
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            GPIO.setup(18,GPIO.OUT)
+            GPIO.setup(23,GPIO.OUT)
+            GPIO.setup(24,GPIO.OUT)
+            GPIO.setup(25,GPIO.OUT)
+
+            GPIO.output(18,GPIO.HIGH)
+            GPIO.output(23,GPIO.LOW)
+            GPIO.output(24,GPIO.LOW)
+            GPIO.output(25,GPIO.HIGH)
+
+            time.sleep(moveToSitting)
+            GPIO.cleanup()
             s.push(coag_desk)
             print(s.get_stack())
 
@@ -549,31 +576,12 @@ def delete_login_success():
         currentHeight = s.pop()
         desk_moving = standing_height*25.4/10
         print(desk_moving)
-        coag_desk = desk_moving/4        
+        coag_desk = desk_moving/5        
         if currentHeight < coag_desk:
             moveToStanding = coag_desk - currentHeight
             print(moveToStanding)
-
-            """GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
-            GPIO.setup(18,GPIO.OUT)
-            GPIO.setup(23,GPIO.OUT)
-            GPIO.setup(24,GPIO.OUT)
-            GPIO.setup(25,GPIO.OUT)
-
-            GPIO.output(18,GPIO.HIGH)
-            GPIO.output(23,GPIO.LOW)
-            GPIO.output(24,GPIO.LOW)
-            GPIO.output(25,GPIO.HIGH)
-            time.sleep(moveToStanding)"""
-            #GPIO.cleanup()
-            s.push(coag_desk)
-            print(s.get_stack())
-
-        elif currentHeight > coag_desk:
-            moveToStanding = currentHeight - coag_desk
-            print(moveToStanding)
-            """GPIO.setmode(GPIO.BCM)
+            #move up
+            GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
             GPIO.setup(18,GPIO.OUT)
             GPIO.setup(23,GPIO.OUT)
@@ -584,8 +592,28 @@ def delete_login_success():
             GPIO.output(23,GPIO.HIGH)
             GPIO.output(24,GPIO.HIGH)
             GPIO.output(25,GPIO.LOW)
-            time.sleep(moveToStanding)"""
-            #GPIO.cleanup()
+            time.sleep(moveToStanding)
+            GPIO.cleanup()
+            s.push(coag_desk)
+            print(s.get_stack())
+
+        elif currentHeight > coag_desk:
+            moveToStanding = currentHeight - coag_desk
+            print(moveToStanding)
+            #move down
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            GPIO.setup(18,GPIO.OUT)
+            GPIO.setup(23,GPIO.OUT)
+            GPIO.setup(24,GPIO.OUT)
+            GPIO.setup(25,GPIO.OUT)
+
+            GPIO.output(18,GPIO.HIGH)
+            GPIO.output(23,GPIO.LOW)
+            GPIO.output(24,GPIO.LOW)
+            GPIO.output(25,GPIO.HIGH)
+            time.sleep(moveToStanding)
+            GPIO.cleanup()
             s.push(coag_desk)
             print(s.get_stack())
         elif currentHeight == coag_desk:
@@ -599,12 +627,36 @@ def delete_login_success():
     def logout():
         #add logout button here
         currentHeight = s.pop()
-        bottomOut = 33 - currentHeight 
-#       send desk to bottom out with gpio
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(18,GPIO.OUT)
+        GPIO.setup(23,GPIO.OUT)
+        GPIO.setup(24,GPIO.OUT)
+        GPIO.setup(25,GPIO.OUT)
+
+        GPIO.output(18,GPIO.HIGH)
+        GPIO.output(23,GPIO.LOW)
+        GPIO.output(24,GPIO.LOW)
+        GPIO.output(25,GPIO.HIGH)
+
+        time.sleep(27)
+        GPIO.cleanup()
+
+        s.push(0)
         print(bottomOut)
         print(s.get_stack())
         main_screen.destroy()
 
+    global hold_down
+
+    def manual_up(event):
+        hold_down = True
+        while hold_down:
+            print("raising desk... ")
+
+    def manual_down(event):
+        global running
+        print("lowering desk... ")
 
     # height calculation
     height_total = int(user_data["user_height"])
@@ -623,7 +675,7 @@ def delete_login_success():
     #heightinch_entry.delete(0, END)
 
     #Label(Loggin_screen, text="Here is where Andres stuff goes").pack()
-
+    
     Label(Loggin_screen, text="Your height in inches: ").pack()
     Label(Loggin_screen, text=height_total).pack()
 
@@ -634,11 +686,11 @@ def delete_login_success():
     Label(Loggin_screen, text=sitting_height).pack()
     Label(Loggin_screen, text="").pack()
 
-    Button(Loggin_screen, text="Sit", fg="red", width=7, height=1,command = lambda: sitting()).place(relx=0.65, rely=0.83, anchor=S)
-    Button(Loggin_screen, text="Stand", fg="red", width=7, height=1, command= lambda: standing()).place(relx=0.35, rely=.83, anchor=S)
+    Button(Loggin_screen, text="Sit", fg="red", width=12, height=4,command = lambda: sitting()).place(relx=0.65, rely=0.83, anchor=S)
+    Button(Loggin_screen, text="Stand", fg="red", width=12, height=4, command= lambda: standing()).place(relx=0.35, rely=.83, anchor=S)
     Button(Loggin_screen, text="Manual", width=6, height=1, command=lambda: manual()).place(relx=0.85, rely=.980, anchor=S)
-    Button(Loggin_screen, text="Logout", width=6, height=1, command=lambda: logout()).place(relx=0.15, rely=.980, anchor=S)
-    Button(Loggin_screen, text="Run Timmer", height="2", width="18", command=lambda:t1.start()).pack()
+    Button(Loggin_screen, text="Logout", width=10, height=2, command=lambda: logout()).place(relx=0.15, rely=.980, anchor=S)
+    Button(Loggin_screen, text="Run Timer", height="2", width="18", command=lambda:t1.start()).pack()
 
 def delete_password_not_recognised():
     password_not_recog_screen.destroy()
